@@ -38,29 +38,37 @@ footer {visibility: hidden;}
     margin-bottom: 30px;
 }
 
+/* Ask Question Label */
+.ask-label {
+    font-size: 22px;
+    font-weight: bold;
+    color: #A8E6CF;
+    margin-bottom: 5px;
+}
+
 /* Input box */
 .stTextInput input {
     background-color: #1B4F72;
-    color: #FDFEFE;
-    border-radius: 10px;
+    color: #E8F8F5;
+    border-radius: 12px;
     border: 2px solid #74B9FF;
-    padding: 10px;
-    font-size: 16px;
+    padding: 14px;
+    font-size: 18px;
 }
 
-/* Placeholder color */
+/* Placeholder */
 .stTextInput input::placeholder {
-    color: #D6EAF8;
+    color: #C7ECEE;
 }
 
 /* Button */
 .stButton button {
     background-color: #74B9FF;
     color: black;
-    font-size: 16px;
+    font-size: 17px;
     font-weight: bold;
-    border-radius: 10px;
-    padding: 10px 20px;
+    border-radius: 12px;
+    padding: 12px 20px;
     width: 100%;
 }
 
@@ -88,32 +96,46 @@ footer {visibility: hidden;}
 /* AI text */
 .ai-text {
     color: #D6EAF8;
-    margin-left: 10px;
+}
+
+/* Footer note */
+.footer-note {
+    text-align: center;
+    color: #D6EAF8;
+    font-size: 14px;
+    margin-top: 40px;
+    opacity: 0.8;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- UI ----------------
-st.markdown('<div class="main-title">🤖 AI Study Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Ask your questions and get instant help</div>', unsafe_allow_html=True)
-
-# Input
-question = st.text_input("Ask a question", placeholder="Type your question here...")
-
-# Session state
+# ---------------- SESSION STATE ----------------
 if "conversation" not in st.session_state:
     st.session_state.conversation = []
 
-# Button
-if st.button("Ask AI"):
-    if question.strip() != "":
-        # Temporary AI response (no API)
-        response = f"I received your question: **{question}**. AI response will appear here."
+# ---------------- SIDEBAR ----------------
+with st.sidebar:
+    st.markdown("## 🧾 Chat History")
+    if st.session_state.conversation:
+        for i, (q, _) in enumerate(st.session_state.conversation[::-1], 1):
+            st.markdown(f"**{i}.** {q[:40]}...")
+    else:
+        st.info("No conversations yet")
 
-        st.session_state.conversation.append(
-            (question, response)
-        )
+# ---------------- MAIN UI ----------------
+st.markdown('<div class="main-title">🤖 AI Study Assistant</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Ask your questions and get instant help</div>', unsafe_allow_html=True)
+
+# ---------------- INPUT FORM (ENTER ENABLED) ----------------
+with st.form(key="question_form", clear_on_submit=True):
+    st.markdown('<div class="ask-label">Ask a Question</div>', unsafe_allow_html=True)
+    question = st.text_input("", placeholder="Type your question and press Enter...")
+    submitted = st.form_submit_button("Ask AI")
+
+    if submitted and question.strip():
+        response = f"I received your question: **{question}**. AI response will appear here."
+        st.session_state.conversation.append((question, response))
 
 # ---------------- CONVERSATION DISPLAY ----------------
 if st.session_state.conversation:
@@ -127,3 +149,10 @@ if st.session_state.conversation:
             <div class="ai-text"><b>AI:</b> {a}</div>
         </div>
         """, unsafe_allow_html=True)
+
+# ---------------- FOOTER NOTE ----------------
+st.markdown("""
+<div class="footer-note">
+⚠️ I can make mistakes. Please verify important information.
+</div>
+""", unsafe_allow_html=True)
