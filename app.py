@@ -3,59 +3,12 @@ import streamlit as st
 import os
 from openai import OpenAI
 
-# -------------------------------
-# Page Config
-# -------------------------------
-st.set_page_config(
-    page_title="AI Study Assistant",
-    page_icon="🤖",
-    layout="wide"
-)
+st.set_page_config(page_title="AI Study Assistant", page_icon="🤖")
 
-# -------------------------------
-# Background Gradient + Custom CSS
-# -------------------------------
-st.markdown(
-    """
-    <style>
-    body {
-        background: linear-gradient(to right, #f5f7fa, #c3cfe2);
-    }
-    div.stButton > button {
-        background-color: #6c5ce7;
-        color: white;
-        height: 3em;
-        width: 100%;
-        border-radius: 10px;
-        font-size: 16px;
-    }
-    div.stButton > button:hover {
-        background-color: #a29bfe;
-        color: white;
-    }
-    .stTextArea>label {
-        font-weight: bold;
-        color: #2d3436;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# -------------------------------
-# App Header
-# -------------------------------
-st.image("https://cdn-icons-png.flaticon.com/512/4712/4712307.png", width=80)
 st.title("🤖 AI Study Assistant")
-st.markdown(
-    "Ask questions and get answers powered by OpenAI GPT models! "
-    "Type your prompt and see the AI in action."
-)
-st.markdown("---")
+st.write("Ask questions and get answers powered by OpenAI GPT models!")
 
-# -------------------------------
-# Load API Key
-# -------------------------------
+# --- Step 1: Load API Key ---
 api_key = os.getenv("OPENAI_API_KEY")
 
 # Optional fallback if API key not found
@@ -67,56 +20,38 @@ if not api_key:
 if api_key:
     client = OpenAI(api_key=api_key)
 
-# -------------------------------
-# Layout: Input and Output Columns
-# -------------------------------
-col1, col2 = st.columns([1, 1])
+# --- Step 2: Get user input ---
+user_prompt = st.text_area("Enter your question or prompt here:", height=150)
 
-with col1:
-    with st.container():
-        st.markdown("### 💬 Your Input")
-        user_prompt = st.text_area(
-            "Type your question or prompt here:",
-            height=200
-        )
-
-with col2:
-    with st.container():
-        st.markdown("### 🤖 AI Response")
-        # Placeholder for AI output
-        ai_response_box = st.empty()
-
-# -------------------------------
-# Generate Response
-# -------------------------------
+# --- Step 3: Submit button ---
 if st.button("Get Answer"):
     if not user_prompt:
         st.error("Please enter a prompt first!")
-    elif not api_key:
-        st.error("API key required to connect to OpenAI.")
     else:
-        with st.spinner("Generating response..."):
-            try:
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {"role": "system", "content": "You are a helpful AI assistant."},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    temperature=0.7,
-                    max_tokens=200
-                )
-                answer = response.choices[0].message.content.strip()
-                ai_response_box.success(answer)
-            except Exception as e:
-                ai_response_box.error(f"Error connecting to OpenAI: {e}")
+        if not api_key:
+            st.error("API key required to connect to OpenAI.")
+        else:
+            with st.spinner("Generating response..."):
+                try:
+                    # --- NEW OpenAI 1.0+ API call ---
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": "You are a helpful AI assistant."},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.7,
+                        max_tokens=200
+                    )
+                    answer = response.choices[0].message.content.strip()
+                    st.success("✅ Response:")
+                    st.write(answer)
+                except Exception as e:
+                    st.error(f"Error connecting to OpenAI: {e}")
 
-# -------------------------------
-# Footer
-# -------------------------------
+# --- Step 4: Footer ---
 st.markdown("---")
 st.markdown(
     "💡 **Tip:** Your OpenAI API key is kept secure using Streamlit Secrets. "
-    "If not provided, you can enter it manually above. "
-    "Enjoy your AI Study Assistant!"
+    "If not provided, you can enter it manually above."
 )
