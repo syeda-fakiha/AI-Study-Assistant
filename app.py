@@ -106,10 +106,11 @@ with st.form("question_form", clear_on_submit=True):
                     st.session_state.chats.append(st.session_state.active_chat.copy())
 
             except Exception as e:
-                  if "insufficient_quota" in str(e):
-        st.error("⚠️ Your OpenAI API key has no remaining quota. Please update it.")
-    else:
-        st.error(f"Error connecting to AI: {str(e)}")
+                # Handle quota errors nicely
+                if "insufficient_quota" in str(e):
+                    st.error("⚠️ Your OpenAI API key has no remaining quota. Please update it.")
+                else:
+                    st.error(f"Error connecting to AI: {str(e)}")
 
 # ---------------- DISPLAY CONVERSATION ----------------
 if st.session_state.active_chat:
@@ -130,4 +131,3 @@ st.markdown("""
 ⚠️ I can make mistakes. Please verify important information.
 </div>
 """, unsafe_allow_html=True)
-
