@@ -30,27 +30,27 @@ header, footer {visibility: hidden;}
 
 # ---------------- SESSION STATE ----------------
 if "chats" not in st.session_state:
-    st.session_state.chats = []  # list of conversations
+    st.session_state.chats = []  # all conversations
 if "active_chat" not in st.session_state:
-    st.session_state.active_chat = []
+    st.session_state.active_chat = []  # current chat session
 
 # ---------------- OPENAI CLIENT ----------------
-# Try getting API key from Secrets
+# Try reading API key from Secrets
 api_key = st.secrets.get("project_API_KEY")
 
-# If no key in Secrets, allow manual input
+# If Secrets key missing, allow manual input
 if not api_key:
     api_key = st.text_input("Enter your OpenAI API Key", type="password")
 
-# Only initialize client if key exists
 client = None
 if api_key:
     try:
         client = OpenAI(api_key=api_key)
-    except Exception as e:
-        st.error(f"Error initializing OpenAI client: {str(e)}")
+    except Exception:
+        client = None
+        st.error("⚠️ Unable to initialize OpenAI client with the provided key.")
 else:
-    st.warning("⚠️ OpenAI API Key missing! Please add it in Streamlit Secrets or enter manually.")
+    st.warning("⚠️ OpenAI API Key missing! Please add it in Secrets or enter manually.")
 
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
@@ -58,7 +58,7 @@ with st.sidebar:
     
     if st.session_state.chats:
         for idx, conv in enumerate(st.session_state.chats[::-1]):
-            # show first line as label
+            # Show first question as label
             label = conv[0][0] if conv else f"Chat {len(st.session_state.chats)-idx}"
             if st.button(label[:35], key=f"chat_{idx}"):
                 st.session_state.active_chat = conv.copy()
@@ -76,7 +76,7 @@ st.markdown('<div class="subtitle">Ask questions and get AI-powered help</div>',
 with st.form("question_form", clear_on_submit=True):
     st.markdown('<div class="ask-label">Ask a Question</div>', unsafe_allow_html=True)
     question = st.text_input(
-        "Your Question",  # required for accessibility
+        "Your Question",  # label needed for accessibility
         placeholder="Type your question and press Enter...",
         label_visibility="collapsed"
     )
@@ -101,14 +101,21 @@ with st.form("question_form", clear_on_submit=True):
                 answer = response.choices[0].message.content
                 st.session_state.active_chat.append((question, answer))
 
-                # Save to chats if not already saved
+                # Save current chat session if new
                 if st.session_state.active_chat not in st.session_state.chats:
                     st.session_state.chats.append(st.session_state.active_chat.copy())
 
             except Exception as e:
-                # Handle quota errors nicely
                 if "insufficient_quota" in str(e):
-                    st.error("⚠️ Your OpenAI API key has no remaining quota. Please update it.")
+                    st.error("⚠️ Your OpenAI API key has no remaining quota. Please update it or enter a new one below.")
+                    # show input for manual API key
+                    manual_key = st.text_input("Enter a new OpenAI API Key", type="password")
+                    if manual_key:
+                        try:
+                            client = OpenAI(api_key=manual_key)
+                            st.success("✅ API key updated! Try asking again.")
+                        except Exception:
+                            st.error("⚠️ The provided key is invalid. Please try again.")
                 else:
                     st.error(f"Error connecting to AI: {str(e)}")
 
@@ -131,4 +138,3 @@ st.markdown("""
 ⚠️ I can make mistakes. Please verify important information.
 </div>
 """, unsafe_allow_html=True)
-
