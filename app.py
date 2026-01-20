@@ -8,7 +8,6 @@ st.set_page_config(
     layout="centered"
 )
 
-client = OpenAI(api_key=st.secrets.get("project_API_KEY"))
 MAX_CHARS = 400
 
 # ---------------- CSS ----------------
@@ -35,6 +34,24 @@ if "chats" not in st.session_state:
 if "active_chat" not in st.session_state:
     st.session_state.active_chat = []
 
+# ---------------- OPENAI CLIENT ----------------
+# Try getting API key from Secrets
+api_key = st.secrets.get("project_API_KEY")
+
+# If no key in Secrets, allow manual input
+if not api_key:
+    api_key = st.text_input("Enter your OpenAI API Key", type="password")
+
+# Only initialize client if key exists
+client = None
+if api_key:
+    try:
+        client = OpenAI(api_key=api_key)
+    except Exception as e:
+        st.error(f"Error initializing OpenAI client: {str(e)}")
+else:
+    st.warning("⚠️ OpenAI API Key missing! Please add it in Streamlit Secrets or enter manually.")
+
 # ---------------- SIDEBAR ----------------
 with st.sidebar:
     st.markdown("## 🧾 Chat History")
@@ -58,7 +75,11 @@ st.markdown('<div class="subtitle">Ask questions and get AI-powered help</div>',
 # ---------------- INPUT + PROCESS ----------------
 with st.form("question_form", clear_on_submit=True):
     st.markdown('<div class="ask-label">Ask a Question</div>', unsafe_allow_html=True)
-    question = st.text_input("", placeholder="Type your question and press Enter...")
+    question = st.text_input(
+        "Your Question",  # required for accessibility
+        placeholder="Type your question and press Enter...",
+        label_visibility="collapsed"
+    )
     submitted = st.form_submit_button("Ask AI")
 
     if submitted:
@@ -66,6 +87,8 @@ with st.form("question_form", clear_on_submit=True):
             st.warning("Please enter a question before submitting.")
         elif len(question) > MAX_CHARS:
             st.warning(f"Question too long. Limit is {MAX_CHARS} characters.")
+        elif not client:
+            st.error("Cannot connect to AI: OpenAI API key missing or invalid.")
         else:
             try:
                 response = client.chat.completions.create(
@@ -75,16 +98,15 @@ with st.form("question_form", clear_on_submit=True):
                         {"role": "user", "content": question}
                     ]
                 )
-
                 answer = response.choices[0].message.content
                 st.session_state.active_chat.append((question, answer))
 
-                # also save to chats if new
+                # Save to chats if not already saved
                 if st.session_state.active_chat not in st.session_state.chats:
                     st.session_state.chats.append(st.session_state.active_chat.copy())
 
-            except Exception:
-                st.error("Error connecting to AI. Please try again later.")
+            except Exception as e:
+                st.error(f"Error connecting to AI: {str(e)}")
 
 # ---------------- DISPLAY CONVERSATION ----------------
 if st.session_state.active_chat:
@@ -105,6 +127,3 @@ st.markdown("""
 ⚠️ I can make mistakes. Please verify important information.
 </div>
 """, unsafe_allow_html=True)
-
-
-
