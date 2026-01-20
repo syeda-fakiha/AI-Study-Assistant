@@ -8,7 +8,7 @@ st.set_page_config(
     layout="centered"
 )
 
-client = OpenAI(api_key=st.secrets.get("OPENAI_API_KEY"))
+client = OpenAI(api_key=st.secrets.get("Project_API_KEY"))
 MAX_CHARS = 400
 
 # ---------------- CSS ----------------
@@ -105,4 +105,5 @@ st.markdown("""
 ⚠️ I can make mistakes. Please verify important information.
 </div>
 """, unsafe_allow_html=True)
+
 
