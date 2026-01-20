@@ -33,14 +33,20 @@ if "chats" not in st.session_state:
     st.session_state.chats = []  # all conversations
 if "active_chat" not in st.session_state:
     st.session_state.active_chat = []  # current chat session
+if "last_question" not in st.session_state:
+    st.session_state.last_question = None  # store last question for retry
 
 # ---------------- OPENAI CLIENT ----------------
 # Try reading API key from Secrets
 api_key = st.secrets.get("project_API_KEY")
 
-# If Secrets key missing, allow manual input
+# Manual input fallback
+manual_key = None
 if not api_key:
-    api_key = st.text_input("Enter your OpenAI API Key", type="password")
+    manual_key = st.text_input("Enter your OpenAI API Key", type="password")
+
+if manual_key:
+    api_key = manual_key
 
 client = None
 if api_key:
@@ -58,7 +64,6 @@ with st.sidebar:
     
     if st.session_state.chats:
         for idx, conv in enumerate(st.session_state.chats[::-1]):
-            # Show first question as label
             label = conv[0][0] if conv else f"Chat {len(st.session_state.chats)-idx}"
             if st.button(label[:35], key=f"chat_{idx}"):
                 st.session_state.active_chat = conv.copy()
@@ -76,13 +81,16 @@ st.markdown('<div class="subtitle">Ask questions and get AI-powered help</div>',
 with st.form("question_form", clear_on_submit=True):
     st.markdown('<div class="ask-label">Ask a Question</div>', unsafe_allow_html=True)
     question = st.text_input(
-        "Your Question",  # label needed for accessibility
+        "Your Question",
         placeholder="Type your question and press Enter...",
         label_visibility="collapsed"
     )
     submitted = st.form_submit_button("Ask AI")
 
+    # Store question in session for retry if needed
     if submitted:
+        st.session_state.last_question = question
+
         if not question.strip():
             st.warning("Please enter a question before submitting.")
         elif len(question) > MAX_CHARS:
@@ -101,21 +109,33 @@ with st.form("question_form", clear_on_submit=True):
                 answer = response.choices[0].message.content
                 st.session_state.active_chat.append((question, answer))
 
-                # Save current chat session if new
                 if st.session_state.active_chat not in st.session_state.chats:
                     st.session_state.chats.append(st.session_state.active_chat.copy())
 
             except Exception as e:
                 if "insufficient_quota" in str(e):
-                    st.error("⚠️ Your OpenAI API key has no remaining quota. Please update it or enter a new one below.")
-                    # show input for manual API key
-                    manual_key = st.text_input("Enter a new OpenAI API Key", type="password")
-                    if manual_key:
+                    st.error("⚠️ Your OpenAI API key has no remaining quota. Please enter a new key below.")
+                    manual_key_input = st.text_input("Enter a new OpenAI API Key", type="password")
+                    if manual_key_input:
                         try:
-                            client = OpenAI(api_key=manual_key)
-                            st.success("✅ API key updated! Try asking again.")
+                            client = OpenAI(api_key=manual_key_input)
+                            st.success("✅ API key updated! Retrying last question...")
+
+                            # Retry the last question automatically
+                            if st.session_state.last_question:
+                                retry_response = client.chat.completions.create(
+                                    model="gpt-4o-mini",
+                                    messages=[
+                                        {"role": "system", "content": "You are a helpful academic study assistant."},
+                                        {"role": "user", "content": st.session_state.last_question}
+                                    ]
+                                )
+                                answer = retry_response.choices[0].message.content
+                                st.session_state.active_chat.append((st.session_state.last_question, answer))
+                                if st.session_state.active_chat not in st.session_state.chats:
+                                    st.session_state.chats.append(st.session_state.active_chat.copy())
                         except Exception:
-                            st.error("⚠️ The provided key is invalid. Please try again.")
+                            st.error("⚠️ The provided key is invalid or has no quota. Please try again.")
                 else:
                     st.error(f"Error connecting to AI: {str(e)}")
 
