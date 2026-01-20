@@ -38,7 +38,7 @@ if "last_question" not in st.session_state:
 
 # ---------------- OPENAI CLIENT ----------------
 # Try reading API key from Secrets
-api_key = st.secrets.get("project_API_KEY")
+api_key = st.secrets.get("OpenAI_API_KEY")
 
 # Manual input fallback
 manual_key = None
@@ -158,3 +158,4 @@ st.markdown("""
 ⚠️ I can make mistakes. Please verify important information.
 </div>
 """, unsafe_allow_html=True)
+
