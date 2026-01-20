@@ -27,13 +27,17 @@ if st.button("Get Answer"):
     else:
         with st.spinner("Generating response..."):
             try:
-                response = openai.Completion.create(
-                    model="text-davinci-003",  # or "gpt-3.5-turbo" for chat-like responses
-                    prompt=user_prompt,
-                    max_tokens=200,
-                    temperature=0.7
+                # --- NEW: OpenAI Chat API (1.0+) ---
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful AI assistant."},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=200
                 )
-                answer = response.choices[0].text.strip()
+                answer = response.choices[0].message.content.strip()
                 st.success("✅ Response:")
                 st.write(answer)
             except Exception as e:
