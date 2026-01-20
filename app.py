@@ -13,17 +13,16 @@ st.set_page_config(
 )
 
 # -------------------------------
-# Deep Blue Background + Custom CSS
+# Background Gradient + Custom CSS
 # -------------------------------
 st.markdown(
     """
     <style>
     body {
-        background-color: #1e3a8a;  /* deep blue */
-        color: white;  /* text in white */
+        background: linear-gradient(to right, #f5f7fa, #c3cfe2);
     }
     div.stButton > button {
-        background-color: #6c5ce7;  /* purple button */
+        background-color: #6c5ce7;
         color: white;
         height: 3em;
         width: 100%;
@@ -31,15 +30,12 @@ st.markdown(
         font-size: 16px;
     }
     div.stButton > button:hover {
-        background-color: #a29bfe;  /* lighter purple on hover */
+        background-color: #a29bfe;
         color: white;
     }
     .stTextArea>label {
         font-weight: bold;
-        color: white;
-    }
-    .stMarkdown {
-        color: white;
+        color: #2d3436;
     }
     </style>
     """,
